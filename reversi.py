@@ -1,9 +1,10 @@
 from pprint import pprint
 import sys
 from collections import Counter
+from random import shuffle
 
 class Reversi:
-    def __init__(self, player:int):
+    def __init__(self, player: int, mode: int):
         self.field = [[" " for _ in range(10)] for __ in range(10)] # 盤目
         # その場所にコマを置いた時に、どの方向に相手のコマを取れるかのベクトルを格納
         self.direction = [[" " for _ in range(10)] for __ in range(10)]
@@ -32,6 +33,10 @@ class Reversi:
         else:
             print("invalid player")
             sys.exit(1)
+        
+        # modeが0なら対人モード、1なら対CPUモード
+        self.mode = mode
+
         # print(f"your piece is {self.piece}")
         # self.show()
     
@@ -64,11 +69,27 @@ class Reversi:
         # self.show()
         self.switch()
     
+    # とりあえず打てるところからランダムに置くcpuを作る
+    def cpu(self):
+        self.search()
+        # self.show()
+        if self.count == 0:
+            pass
+        else:
+            print(self.coordinate)
+            shuffle(self.coordinate)
+            print(self.coordinate)
+            x = self.coordinate[0][0]
+            y = self.coordinate[0][1]
+            self.reverse(x, y)
+        self.clear()
+        self.switch()
+    
     # 現在の盤目の表示
     def show(self):
         for i in range(10):
             for j in range(10):
-                print(self.field[j][i], end="|")
+                print(self.field[j][i], end=" ")
             print()
 
     # 現在ある場所にコマを置いた時に相手のコマを取れるベクトルの表示
@@ -82,6 +103,8 @@ class Reversi:
     def search(self):
         # おける数をカウントする
         self.count = 0
+        # おける場所のインデックスを保持
+        self.coordinate = []
         for x in range(1, 9):
             for y in range(1, 9):
                 # print(x, y)
@@ -114,6 +137,8 @@ class Reversi:
                                     # print("ok")
                                     self.field[x][y] = "*"
                                     temp.append([dx, dy])
+                                    # 置ける場所に追加
+                                    self.coordinate.append([x, y])
                                     self.count += 1
                                     break
                                 # 相手のコマを通っていなければ取れない
@@ -161,8 +186,36 @@ class Reversi:
             self.piece = "●"
             self.rival = "◯"
             self.player = 1
+    
+    # 実行する関数
+    def main(self):
+        if self.mode == 0:
+            print("PvP!")
+            # TODO
+            # とりあえず無限ループで実行
+            while True:
+                self.put()
+        elif self.mode == 1:
+            print("cpu!")
+            if self.player == 0:
+                # TODO
+                # とりあえず無限ループで実行
+                while True:
+                    self.put()
+                    self.cpu()
+            else:
+                while True:
+                    self.cpu()
+                    self.put()
+        else:
+            print("invalid mode !")
+            sys.exit(1)
+
+
+
+
 
 if __name__ == "__main__":
-    reversi = Reversi(player=0)
-    while True:
-        reversi.put()
+    reversi = Reversi(player=0, mode=1)
+    # while True:
+    reversi.main()
