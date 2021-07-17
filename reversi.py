@@ -2,6 +2,8 @@ from pprint import pprint
 import sys
 from collections import Counter
 from random import shuffle
+import itertools
+import time
 
 class Reversi:
     def __init__(self, player: int, mode: int):
@@ -22,14 +24,17 @@ class Reversi:
         self.field[4][5] = "●"
         self.field[5][4] = "●"
 
+        # コマの数
+        self.num = 4
+
         # 先手か後手かによって駒の色を変える
         self.player = player
         if self.player == 0:
-            self.piece = "◯"
-            self.rival =  "●"
+            self.player_color = "◯"
+            self.rival_color =  "●"
         elif self.player == 1:
-            self.piece = "●"
-            self.rival = "◯"
+            self.player_color = "●"
+            self.rival_color = "◯"
         else:
             print("invalid player")
             sys.exit(1)
@@ -37,12 +42,13 @@ class Reversi:
         # modeが0なら対人モード、1なら対CPUモード
         self.mode = mode
 
-        # print(f"your piece is {self.piece}")
+        # print(f"your player_color is {self.player_color}")
         # self.show()
     
     # 駒を置く
     def put(self):
-        print(f"\nyour piece is {self.piece}\n")
+        print(f"\nyour player_color is {self.player_color}\n")
+        self.Count()
         self.search()
         # 置くところがない時の処理
         if self.count == 0:
@@ -65,6 +71,7 @@ class Reversi:
             self.reverse(x, y)
         # self.show_direction()
         # print(self.direction[x][y])
+        self.Count()
         self.clear()
         # self.show()
         self.switch()
@@ -73,7 +80,9 @@ class Reversi:
     def cpu(self):
         self.search()
         # self.show()
+        # print(self.count)
         if self.count == 0:
+            print("no ")
             pass
         else:
             print(self.coordinate)
@@ -81,6 +90,7 @@ class Reversi:
             print(self.coordinate)
             x = self.coordinate[0][0]
             y = self.coordinate[0][1]
+            print(x, y)
             self.reverse(x, y)
         self.clear()
         self.switch()
@@ -105,53 +115,50 @@ class Reversi:
         self.count = 0
         # おける場所のインデックスを保持
         self.coordinate = []
+
+        dx = [1, 1, 0, -1, -1, -1, 0, 1]
+        dy = [0, 1, 1, 1, 0, -1, -1, -1]
         for x in range(1, 9):
             for y in range(1, 9):
                 # print(x, y)
                 if self.field[x][y] != " ":
                     continue
-                coordinate = [[1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1], [0,-1], [1,-1]]
                 temp = []
-                for dx, dy in coordinate:
-                    # もしコマをおける場合、コマを取る方向を格納
-                    current_x = x
-                    current_y = y
-                    connect = False
-                    while True:
-                        current_x += dx
-                        current_y += dy
-                        # print(f"x: {current_x}, y: {current_y}")
-                        if 1 <= current_x <= 8 and 1 <= current_y <= 8:
-                            if self.field[current_x][current_y] == self.rival:
-                                # print("rival")
-                                # 相手のコマを通って、突き当たりで自分のコマがくれば、[x,y]にコマをおける
-                                if not connect:
+                for nx in dx:
+                    for ny in dy:
+                        # もしコマをおける場合、コマを取る方向を格納
+                        current_x = x
+                        current_y = y
+                        connect = False
+                        while True:
+                            current_x += nx
+                            current_y += ny
+                            # print(f"x: {current_x}, y: {current_y}")
+                            if 1 <= current_x <= 8 and 1 <= current_y <= 8:
+                                if self.field[current_x][current_y] == self.rival_color:
+                                    # 相手のコマを通って、突き当たりで自分のコマがくれば、[x,y]にコマをおける
                                     connect = True
-                                # # 相手のコマを２回以上通るときはない
-                                # else:
-                                #     break
-                            elif self.field[current_x][current_y] == self.piece:
-                                # print("player")
-                                # 相手のコマを通っていて、かつ突き当たりに自分のコマがあれば、[x,y]に駒を置ける
-                                if connect:
-                                    # print("ok")
-                                    self.field[x][y] = "*"
-                                    temp.append([dx, dy])
-                                    # 置ける場所に追加
-                                    self.coordinate.append([x, y])
-                                    self.count += 1
-                                    break
-                                # 相手のコマを通っていなければ取れない
+                                    # if not connect:
+                                    #     connect = True
+                                elif self.field[current_x][current_y] == self.player_color:
+                                    # print("player")
+                                    # 相手のコマを通っていて、かつ突き当たりに自分のコマがあれば、[x,y]に駒を置ける
+                                    if connect:
+                                        # print("ok")
+                                        self.field[x][y] = "*"
+                                        temp.append([nx, ny])
+                                        # 置ける場所に追加
+                                        self.coordinate.append([x, y])
+                                        self.count += 1
+                                        break
+                                    # 相手のコマを通っていなければ取れない
+                                    else:
+                                        break
                                 else:
                                     break
-                            elif self.field[current_x][current_y] == " ":
-                                # print("none")
+                            else:
                                 break
-                            elif self.field[current_x][current_y] == "*":
-                                break
-                        else:
-                            break
-                # print(temp)
+                    # print(temp)
                 self.direction[x][y] = temp
         self.show()
     
@@ -164,55 +171,59 @@ class Reversi:
     
     # 相手のコマを裏返す
     def reverse(self, x, y):
-        self.field[x][y] = self.piece
+        self.field[x][y] = self.player_color
         # 探索するベクトル
         for direction in self.direction[x][y]:
             dx = direction[0]
             dy = direction[1]
             current_x = x + dx
             current_y = y + dy
-            while self.field[current_x][current_y] == self.rival:
-                self.field[current_x][current_y] = self.piece
+            while self.field[current_x][current_y] == self.rival_color:
+                self.field[current_x][current_y] = self.player_color
                 current_x += dx
                 current_y += dy
 
     # 相手のターンと自分のターンを切り替える
     def switch(self):
         if self.player == 1:
-            self.piece = "◯"
-            self.rival =  "●"
+            self.player_color = "◯"
+            self.rival_color =  "●"
             self.player = 0
         elif self.player == 0:
-            self.piece = "●"
-            self.rival = "◯"
+            self.player_color = "●"
+            self.rival_color = "◯"
             self.player = 1
+        # elif self.palyer == 2:
+
+    # 自分のコマと相手のコマの数を数える
+    def Count(self):
+        field_1d = list(itertools.chain.from_iterable(self.field))
+        color_num = Counter(field_1d)
+        self.player_color_num = int(color_num[self.player_color])
+        self.rival_color_num = int(color_num[self.rival_color])
+        self.num = self.player_color_num + self.rival_color_num
+        print(f"rival  {self.rival_color}: {self.rival_color_num}\nplayer {self.player_color}: {self.player_color_num}")
     
     # 実行する関数
     def main(self):
         if self.mode == 0:
             print("PvP!")
-            # TODO
-            # とりあえず無限ループで実行
-            while True:
+            while self.num < 64:
                 self.put()
         elif self.mode == 1:
             print("cpu!")
             if self.player == 0:
-                # TODO
-                # とりあえず無限ループで実行
-                while True:
+                while self.num < 64:
                     self.put()
                     self.cpu()
+                    # time.sleep(0.5)
             else:
-                while True:
+                while self.num < 64:
                     self.cpu()
                     self.put()
         else:
             print("invalid mode !")
             sys.exit(1)
-
-
-
 
 
 if __name__ == "__main__":
